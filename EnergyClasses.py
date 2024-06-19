@@ -54,11 +54,24 @@ class hydroelectric:
     def powerProduced(self):
         return self.ratedMWH*24*self.capacity_factor
         
+    
+    
+    
+    
+    
 class windfarmsOnShore:
-    def __init__(self , ratedMWH):
+    def __init__(self , ratedMWH, lat, lon):
 
         self.ratedMWH = ratedMWH
         self.capacity_factor = .33
+        self.lat = lat
+        self.lon = lon
+    
+    
+    
+    
+    
+    
     
     def powerProduced(self, averageWindspeed):
         return self.ratedMWH*averageWindspeed
