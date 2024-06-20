@@ -24,8 +24,8 @@ def onshoreWindspeed(df, day, closest_mesonet):
   df = df[df['Lat']==closest_mesonet[0]]
   df = df[df['Date']==day]
   average_windspeed = df['DailyAvgWindSp'].mean()
-  variance = df['DailyAvgWindSp'].var()
-  return max(np.random.normal(average_windspeed, variance, 1),0)
+  standard_deviation = df['DailyAvgWindSp'].std()
+  return max(np.random.normal(average_windspeed, standard_deviation, 1),0)
 
 def offshoreWindspeed():
   average_windspeed=22
