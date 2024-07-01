@@ -13,6 +13,8 @@ Created on Wed Jun 12 10:28:42 2024
 
 @author: ryanweightman
 """
+import pandas as pd
+import os
 
 class nuclear:
     def __init__(self, ratedMWH):
@@ -77,13 +79,19 @@ class windfarmsOnShore:
         return self.ratedMWH*averageWindspeed
         
 class solar:
-    def __init__(self , ratedMWH):
-
+    def __init__(self , county, ratedMWH):
+        cf = f"data/solar/points/{county}.csv"
+        if os.path.isfile(cf):
+            self.truncations = pd.read_csv(cf)
+            self.basic = False
+        else:
+            self.basic = True
         self.ratedMWH = ratedMWH
         self.capacity_factor = .33
     
-    def powerProduced(self, hoursOfSun):
-        return self.ratedMWH*hoursOfSun
+    def powerProduced(self, day):
+        if self.basic: return self.ratedMWH*self.capacity_factor
+        else: return self.ratedMWH*self.truncations.iat[day, 0]
         
         
 class offshoreWind:

@@ -68,27 +68,50 @@ for i in biomassRatedMWH:
 initialize_hydroelectric = [EnergyClasses.hydroelectric(10.95), EnergyClasses.hydroelectric(2.4)]
 initialize_windfarms = [EnergyClasses.windfarmsOnShore(7.5,39.383621,-74.443047), EnergyClasses.windfarmsOnShore(1.5,40.668640,-74.116982)]
 
-solarRatedMWH = [28.5
-,27.3
-,25.6
-,23.5
-,20.2
-,19.9
-,19.9
-,16.5
-,15.1
-,14.1
-,13.1
-,13.0
-,12.5
-,12.0
-,10.6
-,10.1
-,10.0
+# solarRatedMWH = [28.5
+# ,27.3
+# ,25.6
+# ,23.5
+# ,20.2
+# ,19.9
+# ,19.9
+# ,16.5
+# ,15.1
+# ,14.1
+# ,13.1
+# ,13.0
+# ,12.5
+# ,12.0
+# ,10.6
+# ,10.1
+# ,10.0
+# ]
+solarRatedMWH = [ # County-by-county
+    86.084521 ,
+    125.964542,
+    187.643747,
+    133.264792,
+    209.362726,
+    113.437898,
+    220.747419,
+    141.283501,
+    162.533143,
+    193.930024,
+    624.221555,
+    271.952748,
+    518.839100,
+    322.405963,
+    236.375083,
+    77.505381 ,
+    378.554445,
+    412.859308,
+    211.084045,
+    147.397675,
+    71.737073
 ]
 initialize_solar = []
-for i in solarRatedMWH:
-    initialize_solar+=[EnergyClasses.solar(i)]
+for i in range(len(solarRatedMWH)):
+    initialize_solar+=[EnergyClasses.solar(i + 1, solarRatedMWH[i])]
 
 
 
@@ -153,10 +176,10 @@ for i in initialize_windfarms :
 
 energy_produced_solar  = []
 for i in range(time_horizon):
-    hoursOfSun = dailyValues.hoursOfSun()
+    # hoursOfSun = dailyValues.hoursOfSun()
     energy_produced_solar +=[0]
     for j in initialize_solar :
-        energy_produced_solar[-1] += j.powerProduced(hoursOfSun)
+        energy_produced_solar[-1] += j.powerProduced(i)
 
 energy_produced_offShore  = []
 for i in range(time_horizon):
