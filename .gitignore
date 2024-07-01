@@ -1,0 +1,5 @@
+.DS_Store
+__pycache__
+data/*.*
+data/solar/cache
+data/solar/points
