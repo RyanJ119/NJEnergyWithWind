@@ -2,10 +2,13 @@ import pandas as pd
 import urllib.parse
 import time, os, re, requests, glob
 
+# Downloads and pre-processes data necessary for solar modelling.
+# Based on the download script from the NSRDB website.
+
 FIRST_YEAR = 2020 # Minimum: 1998
 LAST_YEAR = 2022 # Maximum: 2022
 
-API_KEY = "APIKEY"
+API_KEY = "APIKEY" # Sign up for an API key at https://developer.nrel.gov/signup/
 EMAIL = "EMAIL"
 BASE_URL = "https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-2-2-download.csv?"
 
@@ -16,6 +19,8 @@ BASE_URL = "https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-2-2-download.csv?
 #    This is a basic heuristic to bring each county's point closer
 # to a single ZIP, should that ZIP contain a large majority of the
 # county's solar output.
+#    The API does not seem to expose any automated way to convert
+# coordinates or addresses to points.
 
 POINTS = [
     '1222098', # 1.  Sussex County
@@ -93,7 +98,6 @@ def main():
 
     # Merge downloaded data by county to get an average-irradiance-per-hour view
     frames = []
-
     for county in range(1, len(POINTS) + 1):
         files = glob.glob(f"cache/{str(county)}_*.csv")
         if len(files) == 0: exit(1);
@@ -118,6 +122,7 @@ def main():
     high = normalization.groupby("exact_day", as_index=False).max().drop(columns=["exact_day"]).quantile(q = 0.95)["Irradiance"]
 
     # Normalize irradiance with the found high value; then make a daily 'sum' to multiply grid size by
+    # The final data effectively converts the brightness to a number of full-brightness hours
     for county in range(1, len(POINTS) + 1):
         full = pd.read_csv(f"points/{str(county)}.csv")
 

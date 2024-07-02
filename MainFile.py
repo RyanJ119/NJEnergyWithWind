@@ -87,27 +87,27 @@ initialize_windfarms = [EnergyClasses.windfarmsOnShore(7.5,39.383621,-74.443047)
 # ,10.0
 # ]
 solarRatedMWH = [ # County-by-county
-    86.084521 ,
-    125.964542,
-    187.643747,
-    133.264792,
-    209.362726,
-    113.437898,
-    220.747419,
-    141.283501,
-    162.533143,
-    193.930024,
-    624.221555,
-    271.952748,
-    518.839100,
-    322.405963,
-    236.375083,
-    77.505381 ,
-    378.554445,
-    412.859308,
-    211.084045,
-    147.397675,
-    71.737073
+    86.084521 ,   # 1.  Sussex County
+    125.964542,   # 2.  Warren County
+    187.643747,   # 3.  Morris County
+    133.264792,   # 4.  Hunterdon County
+    209.362726,   # 5.  Somerset County
+    113.437898,   # 6.  Passaic County
+    220.747419,   # 7.  Bergen County
+    141.283501,   # 8.  Hudson County
+    162.533143,   # 9.  Essex County
+    193.930024,   # 10. Union County
+    624.221555,   # 11. Middlesex County
+    271.952748,   # 12. Mercer County
+    518.839100,   # 13. Burlington County
+    322.405963,   # 14. Camden County
+    236.375083,   # 15. Gloucester County
+    77.505381 ,   # 16. Salem County
+    378.554445,   # 17. Monmouth County
+    412.859308,   # 18. Ocean County
+    211.084045,   # 19. Atlantic County
+    147.397675,   # 20. Cumberland County
+    71.737073     # 21. Cape May County                    
 ]
 initialize_solar = []
 for i in range(len(solarRatedMWH)):
