@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 
-dfDailyWindSpeeds=pd.read_csv("data/MesonetDataWithNumbersForDays.csv")
+dfDailyWindSpeeds=pd.read_csv("data/OnShoreWind/MesonetDataWithNumbersForDays.csv")
 locationsOfMesonets = [dfDailyWindSpeeds['Lat'].unique(), dfDailyWindSpeeds['Lon'].unique()]
 locationsOfMesonetsAsTuple = [(locationsOfMesonets[0][i], locationsOfMesonets[1][i]) for i in range(0, len(locationsOfMesonets[0]))]
 
@@ -124,7 +124,7 @@ initialize_offshore=[EnergyClasses.offshoreWind(0)]
 initialize_storage = EnergyClasses.storage(461)
 
 ############## here we bring in daily load data provided by DataMiner PJM 
-dfTotalDailyLoad=pd.read_csv("data/TotalNJLoadDaily.csv")
+dfTotalDailyLoad=pd.read_csv("data/PowerDemand/TotalNJLoadDaily.csv")
 loadList = list(dfTotalDailyLoad['load'])
 loadList = loadList[: len(loadList) - 7]
 
