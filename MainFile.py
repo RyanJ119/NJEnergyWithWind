@@ -9,11 +9,11 @@ dfDailyWindSpeeds=pd.read_csv("data/OnShoreWind/MesonetDataWithNumbersForDays.cs
 locationsOfMesonets = [dfDailyWindSpeeds['Lat'].unique(), dfDailyWindSpeeds['Lon'].unique()]
 locationsOfMesonetsAsTuple = [(locationsOfMesonets[0][i], locationsOfMesonets[1][i]) for i in range(0, len(locationsOfMesonets[0]))]
 
-year = 2023
+year = 2024
 if len(sys.argv) > 1: # Allow command-line year
     try:
         yr = int(sys.argv[1])
-        if yr >= 2023:
+        if yr >= 2024:
             year = yr
     except:
         pass
