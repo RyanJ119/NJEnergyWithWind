@@ -93,32 +93,30 @@ initialize_windfarms = [EnergyClasses.windfarmsOnShore(7.5,39.383621,-74.443047)
 # ,10.1
 # ,10.0
 # ]
-solarRatedMWH = [ # County-by-county
-    86.084521 ,   # 1.  Sussex County
-    125.964542,   # 2.  Warren County
-    187.643747,   # 3.  Morris County
-    133.264792,   # 4.  Hunterdon County
-    209.362726,   # 5.  Somerset County
-    113.437898,   # 6.  Passaic County
-    220.747419,   # 7.  Bergen County
-    141.283501,   # 8.  Hudson County
-    162.533143,   # 9.  Essex County
-    193.930024,   # 10. Union County
-    624.221555,   # 11. Middlesex County
-    271.952748,   # 12. Mercer County
-    518.839100,   # 13. Burlington County
-    322.405963,   # 14. Camden County
-    236.375083,   # 15. Gloucester County
-    77.505381 ,   # 16. Salem County
-    378.554445,   # 17. Monmouth County
-    412.859308,   # 18. Ocean County
-    211.084045,   # 19. Atlantic County
-    147.397675,   # 20. Cumberland County
-    71.737073     # 21. Cape May County                    
-]
-initialize_solar = []
-for i in range(len(solarRatedMWH)):
-    initialize_solar+=[EnergyClasses.solar(i + 1, solarRatedMWH[i])]
+# solarRatedMWH = [ # County-by-county
+#     86.084521 ,   # 1.  Sussex County
+#     125.964542,   # 2.  Warren County
+#     187.643747,   # 3.  Morris County
+#     133.264792,   # 4.  Hunterdon County
+#     209.362726,   # 5.  Somerset County
+#     113.437898,   # 6.  Passaic County
+#     220.747419,   # 7.  Bergen County
+#     141.283501,   # 8.  Hudson County
+#     162.533143,   # 9.  Essex County
+#     193.930024,   # 10. Union County
+#     624.221555,   # 11. Middlesex County
+#     271.952748,   # 12. Mercer County
+#     518.839100,   # 13. Burlington County
+#     322.405963,   # 14. Camden County
+#     236.375083,   # 15. Gloucester County
+#     77.505381 ,   # 16. Salem County
+#     378.554445,   # 17. Monmouth County
+#     412.859308,   # 18. Ocean County
+#     211.084045,   # 19. Atlantic County
+#     147.397675,   # 20. Cumberland County
+#     71.737073     # 21. Cape May County                    
+# ]
+initialize_solar = [EnergyClasses.solar(year=year)]
 
 
 
@@ -182,11 +180,14 @@ for i in initialize_windfarms :
 
 
 energy_produced_solar  = []
+gas_error_induced_by_solar  = []
 for i in range(time_horizon):
     # hoursOfSun = dailyValues.hoursOfSun()
     energy_produced_solar +=[0]
+    gas_error_induced_by_solar +=[0]
     for j in initialize_solar :
         energy_produced_solar[-1] += j.powerProduced(i)
+        gas_error_induced_by_solar[-1] += j.errorProducedLatest()
 
 energy_produced_offShore  = []
 for i in range(time_horizon):

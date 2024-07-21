@@ -14,7 +14,7 @@ Created on Wed Jun 12 10:28:42 2024
 @author: ryanweightman
 """
 import pandas as pd
-import os
+import os, random
 
 class nuclear:
     def __init__(self, ratedMWH):
@@ -79,19 +79,30 @@ class windfarmsOnShore:
         return self.ratedMWH*averageWindspeed
         
 class solar:
-    def __init__(self , county, ratedMWH):
-        cf = f"data/solar/points/{county}.csv"
+    def __init__(self , year):
+        self.jancapacity = 4779385 + (year - 2024) * 425000
+        self.solid_latest = 0
+        self.varied_latest = 0
+
+        cf = "data/solar/monthlyratio.csv"
         if os.path.isfile(cf):
-            self.truncations = pd.read_csv(cf)
+            self.ratio = pd.read_csv(cf)
             self.basic = False
         else:
-            self.basic = True
-        self.ratedMWH = ratedMWH
-        self.capacity_factor = .33
-    
+            exit(1)
+  
     def powerProduced(self, day):
-        if self.basic: return self.ratedMWH*self.capacity_factor
-        else: return self.ratedMWH*self.truncations.iat[day, 0]
+        day_ratio = ((30 - (day % 30)) * self.ratio['ratio'][day // 30] + (day % 30) * self.ratio['ratio'][((day // 30) + 1) % 12]) / 30 / 30
+        solid_produced = (self.jancapacity + day * 1180) * day_ratio
+        varied_produced = solid_produced - solid_produced * .05 + solid_produced * .1 * random.random()
+
+        self.solid_latest = solid_produced
+        self.varied_latest = varied_produced
+
+        return varied_produced
+
+    def errorProducedLatest(self):
+        return self.solid_latest - self.varied_latest
         
         
 class offshoreWind:
