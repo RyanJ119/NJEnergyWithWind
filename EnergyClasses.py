@@ -26,13 +26,23 @@ class nuclear:
         
     
 class natural_gas:
-    def __init__(self, refillSchedule , ratedMWH):
-        self.refillSchedule =  refillSchedule
+    # def __init__(self, refillSchedule , ratedMWH):
+    #     self.refillSchedule =  refillSchedule
+    #     self.ratedMWH = ratedMWH
+    #     self.capacity_factor = .33
+
+    def __init__(self, ratedMWH):
         self.ratedMWH = ratedMWH
-        self.capacity_factor = .33
+        self.demand_error_rel = 0.02
+
+    def powerProduced(self, demand, ext_error):
+        resp = demand + ext_error
+        resp = resp - resp * self.demand_error_rel + resp * self.demand_error_rel * 2 * random.random()
+        if resp <= 0: return 0.0;
+        return min(self.ratedMWH * 24, resp)
     
-    def powerProduced(self):
-        return self.ratedMWH*24*self.capacity_factor
+    # def powerProduced(self):
+    #     return self.ratedMWH*24*self.capacity_factor
     
     
     

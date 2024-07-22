@@ -47,8 +47,8 @@ naturalGasRatedMWH = [644
 ]
 
 initialize_naturalGas = []
-for i in naturalGasRatedMWH:
-    initialize_naturalGas+=[EnergyClasses.natural_gas(5, i)]
+# for i in naturalGasRatedMWH:
+initialize_naturalGas+=[EnergyClasses.natural_gas(sum(naturalGasRatedMWH))]
     
    
     
@@ -140,14 +140,6 @@ for i in range(time_horizon):
     for j in initialize_nuclear:
         energy_produced_nuclear[-1] += j.powerProduced()
         
-        
-        
-energy_produced_naturalGas  = []
-for i in range(time_horizon):
-    energy_produced_naturalGas +=[0]
-    for j in initialize_naturalGas :
-        energy_produced_naturalGas[-1] += j.powerProduced()
-        
 energy_produced_biomass  = []
 for i in range(time_horizon):
     energy_produced_biomass +=[0]
@@ -195,6 +187,16 @@ for i in range(time_horizon):
     energy_produced_offShore +=[0]
     for j in initialize_offshore :
         energy_produced_offShore[-1] += j.powerProduced(windSpeed)
+
+pregas_gen =[sum(x) for x in zip(energy_produced_offShore,energy_produced_nuclear, energy_produced_biomass, energy_produced_hydroelectric, energy_produced_windfarms, energy_produced_solar)]
+
+pregas_net = [a_i - b_i for a_i, b_i in zip(pregas_gen, loadList)] 
+
+energy_produced_naturalGas  = []
+for i in range(time_horizon):
+    energy_produced_naturalGas +=[0]
+    for j in initialize_naturalGas :
+        energy_produced_naturalGas[-1] += j.powerProduced(-pregas_net[i], gas_error_induced_by_solar[i])
         
 netDailyEnergyGeneration=[sum(x) for x in zip(energy_produced_offShore,energy_produced_nuclear, energy_produced_naturalGas, energy_produced_biomass, energy_produced_hydroelectric, energy_produced_windfarms, energy_produced_solar)]
 
@@ -213,6 +215,7 @@ print("total biomass Energy Production = ", sum(energy_produced_biomass))
 print("total Natural Gas Energy Production = ", sum(energy_produced_naturalGas))
 
 
+# plt.plot(energy_produced_naturalGas)
 plt.plot(netDailyEnergy)
 plt.show()
 
