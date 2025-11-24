@@ -2,7 +2,7 @@ from helpers import downloader, outliner, discretizer
 import pandas as pd
 import numpy as np
 from pathlib import Path
-import sys, shutil
+import sys
 
 STARTYEAR, ENDYEAR = 2015, 2023
 MALFORMED_SITES_ERROR = "Delete all subfolders in 'sites' besides 'define' and try again."
@@ -43,10 +43,11 @@ for row in areas.itertuples(index = False):
         whole = pd.read_csv(whole_csv)
 
     for h in [10] + list(range(20, 201, 20)):
+        print(whole)
         print(h)
         histo_csv = directory / f"histo_{h}.csv"
-        markov_csv = directory / f"markov_{h}.csv"
-        if unmade(histo_csv) or unmade(markov_csv):
-            h, m = discretizer.histo_markov(whole, h)
-            h.to_csv(histo_csv)
-            m.to_csv(markov_csv)
+        # markov_csv = directory / f"markov_{h}.csv"
+        if unmade(histo_csv):
+            his, _ = discretizer.discretize(whole, h, DIRECTIONS, SPEEDS, False)
+            his.to_csv(histo_csv)
+            # m.to_csv(markov_csv)

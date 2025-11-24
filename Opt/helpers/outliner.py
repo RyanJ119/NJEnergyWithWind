@@ -1,8 +1,5 @@
 from PIL import Image
-from enum import Enum
 import numpy as np
-import matplotlib.pyplot as plt
-import sys
 
 START, UP, DOWN, LEFT, RIGHT = 0, 1, 2, 3, 4
 SIZE_OF_PIXEL = 600.0

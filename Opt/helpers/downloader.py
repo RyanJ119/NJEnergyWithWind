@@ -1,4 +1,3 @@
-import requests
 import pandas as pd
 import urllib
 
@@ -21,12 +20,13 @@ def download_year(year, long, lat):
     }
 
     url_data = URL + urllib.parse.urlencode(input_data, True)
-    return pd.read_csv(url_data, skiprows = 2)
+    return pd.read_csv(url_data, skiprows = 1)
 
 def download_all(startyear, endyear, long, lat):
     print(f"Download started for {{lat: {lat}, long: {long}}}, years [{startyear}, {endyear}]")
     dfs = []
     for y in range(startyear, endyear + 1):
-        dfs.append(download_year(y, long, lat))
+        dy = download_year(y, long, lat)
+        dfs.append(dy)
         print(".", end="")
     return pd.concat(dfs, ignore_index=True) # Concatenated dataframe for all years
