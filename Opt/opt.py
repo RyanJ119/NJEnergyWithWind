@@ -1,76 +1,110 @@
-#!.venv/bin/python
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import subprocess
-import sys
 
 print("Importing libraries. This may take a while... ")
 from py_wake.site import XRSite
 import xarray as xr
 from topfarm import TopFarmProblem
 from topfarm.plotting import XYPlotComp
-from topfarm.constraint_components.boundary import XYBoundaryConstraint, CircleBoundaryConstraint
+from topfarm.constraint_components.boundary import XYBoundaryConstraint
 from topfarm.constraint_components.spacing import SpacingConstraint
-from topfarm.cost_models.cost_model_wrappers import CostModelComponent
 from topfarm.cost_models.py_wake_wrapper import PyWakeAEPCostModelComponent
 from py_wake.deficit_models.gaussian import IEA37SimpleBastankhahGaussian
-from py_wake.examples.data.iea37 import IEA37_WindTurbines, IEA37Site
-from topfarm.easy_drivers import EasyScipyOptimizeDriver
-from topfarm.examples.iea37 import get_iea37_initial, get_iea37_constraints, get_iea37_cost
+from py_wake.examples.data.iea37 import IEA37_WindTurbines
 
-print("Imported. Starting process.")
+print("Imported. Ready.")
 
-LEASE_AREA = sys.argv[1]
-ALTITUDE = sys.argv[2]
 
-boundary = np.load(f"sites/{LEASE_AREA}/boundary.npy")
-histo = pd.read_csv(f"sites/{LEASE_AREA}/histo_{ALTITUDE}.csv")
+# ---------------------------------------------------------
+# MAIN FUNCTION
+# ---------------------------------------------------------
+def run_wake_model(lease_area, altitude):
+    """
+    Run wake model for a chosen lease area and altitude.
 
-wd = histo["dirbins"].unique().tolist()
-ws = histo["speedbins"].unique().tolist()
+    Parameters
+    ----------
+    lease_area : str
+        Name of the lease area folder inside 'sites/'.
+    altitude : str or int
+        Altitude identifier used in histo_<altitude>.csv
+    """
 
-P_wd_ws = [ [0] * len(ws) for i in range(len(wd)) ]
-for r in histo.itertuples():
-    cd, cs = r.dirbins, r.speedbins
-    di, si = wd.index(cd), ws.index(cs)
-    P_wd_ws[di][si] = r.count
+    # Load data
+    boundary = np.load(f"sites/{lease_area}/boundary.npy")
+    histo = pd.read_csv(f"sites/{lease_area}/histo_{altitude}.csv")
 
-site = XRSite(
-    ds=xr.Dataset(
-        data_vars={
-                   'P': (('wd', 'ws'), P_wd_ws),
-                   },
-        coords={'ws': ws, 'wd': wd}))
+    # Extract wind direction + speed bins
+    wd = histo["dirbins"].unique().tolist()
+    ws = histo["speedbins"].unique().tolist()
 
-# site = IEA37Site(9)
+    # Build probability matrix
+    P_wd_ws = [[0] * len(ws) for _ in range(len(wd))]
+    for r in histo.itertuples():
+        di = wd.index(r.dirbins)
+        si = ws.index(r.speedbins)
+        P_wd_ws[di][si] = r.count
 
-# n_wt = 9
-n_wd = len(wd)
+    # Build PyWake site object
+    TI_val = 0.00
+    TI_array = np.full((len(wd), len(ws)), TI_val)
 
-x = [-0.5,-1.5]
-y = [-.5,-1.5]
+    site = XRSite(
+        ds=xr.Dataset(
+            data_vars={
+                'P':  (('wd', 'ws'), P_wd_ws),
+                'TI': (('wd', 'ws'), TI_array),   # <-- add TI
+                },
+            coords={'wd': wd, 'ws': ws}
+            )
+        )
 
-wind_turbines = IEA37_WindTurbines()
-wfmodel = IEA37SimpleBastankhahGaussian(site, wind_turbines) 
-costmodel = PyWakeAEPCostModelComponent(wfmodel, 2, wd=wd, ws=ws)
-# costmodel = CostModelComponent(input_keys=[], n_wt=2, cost_function=lambda : 1)
-# driver = EasyScipyOptimizeDriver()
+    # Set up model + cost
+    wind_turbines = IEA37_WindTurbines()
+    wfmodel = IEA37SimpleBastankhahGaussian(site, wind_turbines)
 
-def plot_boundary(name):
-    tf = TopFarmProblem(
-        design_vars={'x':x, 'y': y}, # setting up the turbine positions as design variables
-        cost_comp=costmodel, # using dummy cost model
-        constraints=[XYBoundaryConstraint(boundary, 'polygon'), SpacingConstraint(1200)], # constraint set up for the boundary type provided
-        plot_comp=XYPlotComp()) # support plotting function
-    tf.evaluate()
+    # Two dummy turbine positions
+    x = [-0.5, -1.5, 100]
+    y = [-0.5, -1.5, 100]
 
-    plt.figure()
-    plt.title(name)
-    tf.plot_comp.plot_constraints() # plot constraints is a helper function in topfarm to plot constraints
-    plt.plot(boundary[:,0], boundary[:,1],'.r', label='Boundary points') # plot the boundary points
-    plt.axis('equal')
-    plt.show()
+    costmodel = PyWakeAEPCostModelComponent(
+        wfmodel,
+        n_wt=3,
+        wd=wd,
+        ws=ws
+    )
 
-plot_boundary('convex_hull')
+    # ---------------------------------------------------------
+    # Helper function inside main function
+    # ---------------------------------------------------------
+    def plot_boundary(name):
+        tf = TopFarmProblem(
+            design_vars={'x': x, 'y': y},
+            cost_comp=costmodel,
+            constraints=[XYBoundaryConstraint(boundary, 'polygon'),
+                         SpacingConstraint(1200)],
+            plot_comp=XYPlotComp()
+        )
+
+        tf.evaluate()
+
+        plt.figure(figsize=(8, 8))
+        plt.title(name)
+        tf.plot_comp.plot_constraints()
+        plt.plot(boundary[:, 0], boundary[:, 1], '.r', label='Boundary points')
+        plt.axis('equal')
+        plt.show()
+
+    # Run the boundary plot
+    plot_boundary(f"Boundary for {lease_area} @ {altitude}m")
+
+
+
+# ---------------------------------------------------------
+# CALL EXAMPLES (uncomment to run in Spyder)
+# ---------------------------------------------------------
+
+run_wake_model("0499", '160')
+# run_wake_model("OCS_EA", 140)
+# run_wake_model("some_area_name", "80")
