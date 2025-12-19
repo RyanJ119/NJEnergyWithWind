@@ -9,7 +9,7 @@ dfDailyWindSpeeds=pd.read_csv("data/OnShoreWind/MesonetDataWithNumbersForDays.cs
 locationsOfMesonets = [dfDailyWindSpeeds['Lat'].unique(), dfDailyWindSpeeds['Lon'].unique()]
 locationsOfMesonetsAsTuple = [(locationsOfMesonets[0][i], locationsOfMesonets[1][i]) for i in range(0, len(locationsOfMesonets[0]))]
 
-year = 2024
+year = 2019
 if len(sys.argv) > 1: # Allow command-line year
     try:
         yr = int(sys.argv[1])
@@ -21,7 +21,7 @@ print(year)
 time_horizon = 360
 
 ### Here we initialize all current NJ energy producers as objects with a MWh Capacity
-initialize_nuclear = [EnergyClasses.nuclear(1173), EnergyClasses.nuclear(2285)]
+initialize_nuclear = [EnergyClasses.nuclear(1173), EnergyClasses.nuclear(2285)];
 
 naturalGasRatedMWH = [644
 ,1229
@@ -44,7 +44,7 @@ naturalGasRatedMWH = [644
 ,740
 ,725
 ,81
-]
+];
 
 initialize_naturalGas = []
 # for i in naturalGasRatedMWH:
@@ -65,15 +65,15 @@ biomassRatedMWH = [3.3
 ,3.0
 ,37.5
 ,2.1
-]
+];
 initialize_biomass = []
 for i in biomassRatedMWH:
-    initialize_biomass+=[EnergyClasses.biomass(i)]
+    initialize_biomass+=[EnergyClasses.biomass(i)];
     
     
 
-initialize_hydroelectric = [EnergyClasses.hydroelectric(10.95), EnergyClasses.hydroelectric(2.4)]
-initialize_windfarms = [EnergyClasses.windfarmsOnShore(7.5,39.383621,-74.443047), EnergyClasses.windfarmsOnShore(1.5,40.668640,-74.116982)]
+initialize_hydroelectric = [EnergyClasses.hydroelectric(10.95), EnergyClasses.hydroelectric(2.4)];
+initialize_windfarms = [EnergyClasses.windfarmsOnShore(7.5,39.383621,-74.443047), EnergyClasses.windfarmsOnShore(1.5,40.668640,-74.116982)];
 
 # solarRatedMWH = [28.5
 # ,27.3
@@ -116,27 +116,127 @@ initialize_windfarms = [EnergyClasses.windfarmsOnShore(7.5,39.383621,-74.443047)
 #     147.397675,   # 20. Cumberland County
 #     71.737073     # 21. Cape May County                    
 # ]
-initialize_solar = [EnergyClasses.solar(year=year)]
+initialize_solar = [EnergyClasses.solar(year=year)];
 
 
 
 ############# Here we initialize Offshore wind in the same way. Future iterations will include the output of the spatial model here.
-initialize_offshore=[EnergyClasses.offshoreWind(0)] 
+
    
+def daily_wind_production(a0, a1, b1, aep_mwh, year=2025):
+    """
+    Compute daily production from a representative wind-speed year.
+
+    Parameters
+    ----------
+    a0, a1, b1 : float
+        Trigonometric coefficients for ws(d).
+    aep_mwh : float
+        Annual Energy Production (MWh/year).
+    year : int
+        Year for date index (non-leap).
+
+    Returns
+    -------
+    df : pandas.DataFrame with columns:
+        - date
+        - dayofyear
+        - ws          (daily wind speed)
+        - production  (daily MWh, scaled to sum to AEP)
+    """
+
+    # 1. Compute daily wind speed
+    t = np.arange(1, 366)
+    ws = a0 + a1 * np.cos(2*np.pi*t/365) + b1 * np.sin(2*np.pi*t/365)
+
+    # Make all speeds non-negative (if trig curve dips below zero)
+    ws = np.maximum(ws, 0)
+
+    # 2. Convert wind speed into relative power
+    #    (just proportional to wind speed — simple model)
+    rel_power = ws.copy()
+
+    # 3. Scale so total = AEP
+    scaling = aep_mwh / rel_power.sum()
+    daily_prod = rel_power * scaling   # in MWh/day
+
+    # 4. Build DataFrame
+    dates = pd.date_range(f"{year}-01-01", periods=365, freq="D")
+
+    return pd.DataFrame({
+        "date": dates,
+        "dayofyear": t,
+        "ws": ws,
+        "production": daily_prod
+    })
+
+
+
+
+# ---- load the two csvs ----
+trig = pd.read_csv("opt/trig3_params_all_sites_heights.csv")
+aep  = pd.read_csv("opt/optimized_AEP_all_farms_160m.csv")
+
+# lease areas of interest
+lease_ids = [532, 538, 541, 542, 549]
+
+# keep only the trig rows for height 160 and desired lease areas
+trig_160 = trig[(trig["height_m"] == 160) & (trig["lease_area"].isin(lease_ids))]
+
+# merge in the optimized AEP (best_AEP) for those sites
+merged = pd.merge(
+    trig_160,
+    aep[["lease_area", "best_AEP"]],
+    on="lease_area",
+    how="inner"
+)
+
+daily_by_lease = {}
+all_daily = []
+
+for _, row in merged.iterrows():
+    lease = int(row["lease_area"])
+
+    # ASSUMPTION: best_AEP is in GWh -> convert to MWh.
+    # If best_AEP is already MWh, just remove the "* 1000".
+    aep_mwh = row["best_AEP"] * 1000.0
+
+    df_daily = daily_wind_production(
+        a0=row["a0"],
+        a1=row["a1"],
+        b1=row["b1"],
+        aep_mwh=aep_mwh,
+        year=2025
+    )
+
+    df_daily["lease_area"] = lease
+    df_daily["height_m"] = row["height_m"]
+
+    daily_by_lease[lease] = df_daily
+    all_daily.append(df_daily)
+
+# optional: one big DataFrame with everything
+all_daily = pd.concat(all_daily, ignore_index=True)
+
+# examples:
+df_0532 = daily_by_lease[532]
+df_0538 = daily_by_lease[538]
+
+total_daily_offshore_wind = all_daily.groupby("date")["production"].sum()
 ############### Here we initialize our storage capacity which for now can be thought of as just one bucket we can pour energy into to use later
 
 
-initialize_storage = EnergyClasses.storage(461)
+initialize_storage = EnergyClasses.storage(461);
 
 ############## here we bring in daily load data provided by DataMiner PJM 
-dfTotalDailyLoad=pd.read_csv("data/PowerDemand/TotalNJLoadDaily.csv")
-loadList = list(dfTotalDailyLoad['load'])
-loadList = loadList[: len(loadList) - 7]
+dfTotalDailyLoad=pd.read_csv("data/PowerDemand/TotalNJLoadDaily.csv");
+loadList = list(dfTotalDailyLoad['load']);
+loadList = loadList[: len(loadList) - 7];
 
  ####### Here we estimate the daily energy produced by each type of energy producer. This code is written to maximize readability, but will be changed to speed up and for optimization routine       
 energy_produced_nuclear = []
 for i in range(time_horizon):
-    energy_produced_nuclear+=[0]
+    energy_produced_nuclear+=[0];
     for j in initialize_nuclear:
         energy_produced_nuclear[-1] += j.powerProduced()
         
@@ -158,7 +258,7 @@ for i in initialize_windfarms :
         for j in range(time_horizon):
 
             windSpeed = dailyValues.onshoreWindspeed(dfDailyWindSpeeds, j+1, closest_mesonet)
-            print(windSpeed)
+            #print(windSpeed);
             energy_produced_windfarms[j]+=i.powerProduced(windSpeed)
 
 
@@ -181,14 +281,14 @@ for i in range(time_horizon):
         energy_produced_solar[-1] += j.powerProduced(i)
         gas_error_induced_by_solar[-1] += j.errorProducedLatest()
 
-energy_produced_offShore  = []
-for i in range(time_horizon):
-    windSpeed = dailyValues.offshoreWindspeed()
-    energy_produced_offShore +=[0]
-    for j in initialize_offshore :
-        energy_produced_offShore[-1] += j.powerProduced(windSpeed)
+#energy_produced_offShore  = []
+# for i in range(time_horizon):
+#     windSpeed = dailyValues.offshoreWindspeed()
+#     energy_produced_offShore +=[0]
+#     for j in initialize_offshore :
+#         energy_produced_offShore[-1] += j.powerProduced(windSpeed)
 
-pregas_gen =[sum(x) for x in zip(energy_produced_offShore,energy_produced_nuclear, energy_produced_biomass, energy_produced_hydroelectric, energy_produced_windfarms, energy_produced_solar)]
+pregas_gen =[sum(x) for x in zip(energy_produced_nuclear, energy_produced_biomass, energy_produced_hydroelectric, energy_produced_windfarms, energy_produced_solar)]
 
 pregas_net = [a_i - b_i for a_i, b_i in zip(pregas_gen, loadList)] 
 
@@ -198,7 +298,7 @@ for i in range(time_horizon):
     for j in initialize_naturalGas :
         energy_produced_naturalGas[-1] += j.powerProduced(-pregas_net[i], gas_error_induced_by_solar[i])
         
-netDailyEnergyGeneration=[sum(x) for x in zip(energy_produced_offShore,energy_produced_nuclear, energy_produced_naturalGas, energy_produced_biomass, energy_produced_hydroelectric, energy_produced_windfarms, energy_produced_solar)]
+netDailyEnergyGeneration=[sum(x) for x in zip(total_daily_offshore_wind,energy_produced_nuclear, energy_produced_naturalGas, energy_produced_biomass, energy_produced_hydroelectric, energy_produced_windfarms, energy_produced_solar)]
 
 netDailyEnergy = [a_i - b_i for a_i, b_i in zip(netDailyEnergyGeneration, loadList)] 
 
@@ -213,10 +313,12 @@ print("total Solar Energy Production = ", sum(energy_produced_solar))
 print("total hydroelectric Energy Production = ", sum(energy_produced_hydroelectric))
 print("total biomass Energy Production = ", sum(energy_produced_biomass))
 print("total Natural Gas Energy Production = ", sum(energy_produced_naturalGas))
-
-
-# plt.plot(energy_produced_naturalGas)
-plt.plot(netDailyEnergy)
+print("total Offshore Wind Production = ", sum(total_daily_offshore_wind))
+print("total Energy Production = ", sum(total_daily_offshore_wind)+sum(energy_produced_nuclear)+sum(energy_produced_windfarms)+sum(energy_produced_solar)+sum(energy_produced_hydroelectric)+sum(energy_produced_biomass)+sum(energy_produced_naturalGas))
+#plt.plot(energy_produced_naturalGas)
+plt.plot(netDailyEnergy, label="Net Daily Energy Production - Consumption")
+#plt.plot(total_daily_offshore_wind)
+plt.legend()
 plt.show()
 
 

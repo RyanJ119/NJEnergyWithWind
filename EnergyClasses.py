@@ -15,6 +15,9 @@ Created on Wed Jun 12 10:28:42 2024
 """
 import pandas as pd
 import os, random
+import numpy as np
+
+
 
 class nuclear:
     def __init__(self, ratedMWH):
@@ -115,13 +118,16 @@ class solar:
         return self.solid_latest - self.varied_latest
         
         
-class offshoreWind:
+
+
+class OffshoreWind:
     def __init__(self , ratedMWH):
 
         self.ratedMWH = ratedMWH
         
     def powerProduced(self, averageWindspeed):
         return self.ratedMWH*averageWindspeed
+        
     
 class storage:
     def __init__(self , ratedMWH):
